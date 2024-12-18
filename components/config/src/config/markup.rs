@@ -41,6 +41,8 @@ pub struct Markdown {
     pub external_links_no_follow: bool,
     /// Whether to set rel="noreferrer" for all external links
     pub external_links_no_referrer: bool,
+    /// Whether to set rel="external" for all external links
+    pub external_links_external: bool,
     /// Whether smart punctuation is enabled (changing quotes, dashes, dots etc in their typographic form)
     pub smart_punctuation: bool,
     /// Whether footnotes are rendered at the bottom in the style of GitHub.
@@ -166,12 +168,18 @@ impl Markdown {
         self.external_links_target_blank
             || self.external_links_no_follow
             || self.external_links_no_referrer
+            || self.external_links_external
     }
 
     pub fn construct_external_link_tag(&self, url: &str, title: &str) -> String {
         let mut rel_opts = Vec::new();
         let mut target = "".to_owned();
         let title = if title.is_empty() { "".to_owned() } else { format!("title=\"{}\" ", title) };
+
+        if self.external_links_external {
+            // Mark external links as such so sites can give them special styling or icons
+            rel_opts.push("external");
+        }
 
         if self.external_links_target_blank {
             // Security risk otherwise
@@ -201,6 +209,7 @@ impl Default for Markdown {
             highlight_theme: DEFAULT_HIGHLIGHT_THEME.to_owned(),
             highlight_themes_css: Vec::new(),
             render_emoji: false,
+            external_links_external: false,
             external_links_target_blank: false,
             external_links_no_follow: false,
             external_links_no_referrer: false,

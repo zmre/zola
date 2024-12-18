@@ -1,0 +1,6 @@
+---
+source: components/markdown/tests/markdown.rs
+assertion_line: 173
+expression: body
+---
+<p><a rel="external noopener nofollow noreferrer" target="_blank" href="https://google.com">https://google.com</a></p>

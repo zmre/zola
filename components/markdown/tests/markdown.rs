@@ -158,10 +158,17 @@ fn can_use_external_links_options() {
     let body = common::render_with_config("<https://google.com>", config.clone()).unwrap().body;
     insta::assert_snapshot!(body);
 
+    // external rel
+    config.markdown.external_links_external = true;
+    config.markdown.external_links_no_referrer = false;
+    let body = common::render_with_config("<https://google.com>", config.clone()).unwrap().body;
+    insta::assert_snapshot!(body);
+
     // all of them
     config.markdown.external_links_no_follow = true;
     config.markdown.external_links_target_blank = true;
     config.markdown.external_links_no_referrer = true;
+    config.markdown.external_links_external = true;
     let body = common::render_with_config("<https://google.com>", config).unwrap().body;
     insta::assert_snapshot!(body);
 }
