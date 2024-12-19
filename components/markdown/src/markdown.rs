@@ -9,6 +9,9 @@ use libs::pulldown_cmark as cmark;
 use libs::pulldown_cmark_escape as cmark_escape;
 use libs::tera;
 use utils::net::is_external_link;
+use utils::site::{
+    canonicalize_relative_path, combine_anchor, extract_anchor, is_link_internal_page,
+};
 
 use crate::context::RenderContext;
 use errors::{Context, Error, Result};
@@ -161,12 +164,45 @@ fn fix_link(
         return Ok(link.to_string());
     }
 
+    let expanded_link: String = if context.config.markdown.backlinks_include_relative_links {
+        // Normalize the path so something like "../../xyz" looks more absolute
+        let canon_path = canonicalize_relative_path(link, context.current_page_path);
+
+        if link != canon_path {
+            // We need to find the internal page markdown reference now and it may
+            // or may not have a .md extension or reference a section or a page, and
+            // we need to be careful of anchors to detach and then reattach later
+            let (split_link, anchor) = extract_anchor(&canon_path);
+
+            // See if the page is internal and check variants with ".md" and "/_index.md" suffixes, too
+            ["", ".md", "/_index.md"]
+                .iter()
+                .find_map(|&suffix| {
+                    let page_with_suffix = split_link.to_owned() + suffix;
+                    if is_link_internal_page(&page_with_suffix, &context.permalinks) {
+                        Some(page_with_suffix)
+                    } else {
+                        None
+                    }
+                })
+                // if we found a link, reassemble it to be a zola link with optional anchor
+                .map(|p| "@/".to_owned() + &combine_anchor(&p, anchor))
+                .unwrap_or(link.to_owned())
+        } else {
+            // If input and canonicalized are the same, don't do any more processing
+            link.to_owned()
+        }
+    } else {
+        // config is off, don't touch it
+        link.to_owned()
+    };
+
     // A few situations here:
-    // - it could be a relative link (starting with `@/`)
+    // - it could be a relative link (starting with `@/` or expanded to start with @/)
     // - it could be a link to a co-located asset
     // - it could be a normal link
-    let result = if link.starts_with("@/") {
-        match resolve_internal_link(link, &context.permalinks) {
+    let result = if expanded_link.starts_with("@/") {
+        match resolve_internal_link(&expanded_link, &context.permalinks) {
             Ok(resolved) => {
                 internal_links.push((resolved.md_path, resolved.anchor));
                 resolved.permalink

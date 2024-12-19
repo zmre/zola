@@ -57,6 +57,8 @@ pub struct Markdown {
     pub extra_theme_set: Arc<Option<ThemeSet>>,
     /// Add loading="lazy" decoding="async" to img tags. When turned on, the alt text must be plain text. Defaults to false
     pub lazy_async_image: bool,
+    /// For backlinks, allow not just "@/path" style paths, but more informal and relative "../other/page" and "subdir/page" style paths, too
+    pub backlinks_include_relative_links: bool,
 }
 
 impl Markdown {
@@ -219,6 +221,7 @@ impl Default for Markdown {
             extra_syntax_set: None,
             extra_theme_set: Arc::new(None),
             lazy_async_image: false,
+            backlinks_include_relative_links: false,
         }
     }
 }
