@@ -59,6 +59,8 @@ pub struct Markdown {
     pub lazy_async_image: bool,
     /// For backlinks, allow not just "@/path" style paths, but more informal and relative "../other/page" and "subdir/page" style paths, too
     pub backlinks_include_relative_links: bool,
+    /// For image links that start with /, if the base_url also starts with / then prepend the base path
+    pub image_links_relative_to_base: bool,
 }
 
 impl Markdown {
@@ -222,6 +224,7 @@ impl Default for Markdown {
             extra_theme_set: Arc::new(None),
             lazy_async_image: false,
             backlinks_include_relative_links: false,
+            image_links_relative_to_base: false,
         }
     }
 }

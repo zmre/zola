@@ -615,7 +615,17 @@ pub fn markdown_to_html(
                         let link = format!("{}{}", context.current_page_permalink, &*dest_url);
                         link.into()
                     } else {
-                        dest_url
+                        if context.config.markdown.image_links_relative_to_base
+                            && dest_url.starts_with("/")
+                            && context.config.base_url.starts_with("/")
+                        {
+                            CowStr::from(canonicalize_relative_path(
+                                &(context.config.base_url.clone() + &*dest_url),
+                                context.current_page_path,
+                            ))
+                        } else {
+                            dest_url
+                        }
                     };
 
                     events.push(if lazy_async_image {
