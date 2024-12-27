@@ -115,6 +115,14 @@ pub fn copy_directory(
     hard_link: bool,
     ignore_globset: Option<&GlobSet>,
 ) -> Result<()> {
+    // We can avoid a lot of unnecessary work if the src directory is filtered out of the globset
+    let relative_path = src.strip_prefix(src).unwrap();
+    if let Some(gs) = ignore_globset {
+        if gs.is_match(relative_path) {
+            return Ok(());
+        }
+    }
+
     for entry in
         WalkDir::new(src).follow_links(true).into_iter().filter_map(std::result::Result::ok)
     {
