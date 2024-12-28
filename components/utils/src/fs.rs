@@ -1,6 +1,6 @@
 use libs::filetime::{set_file_mtime, FileTime};
 use libs::globset::GlobSet;
-use libs::walkdir::WalkDir;
+use libs::walkdir::{DirEntry, WalkDir};
 use std::fs::{copy, create_dir_all, metadata, remove_dir_all, remove_file, File};
 use std::io::prelude::*;
 use std::path::Path;
@@ -109,30 +109,30 @@ pub fn copy_file_if_needed(src: &Path, dest: &Path, hard_link: bool) -> Result<(
     Ok(())
 }
 
+fn is_ignored(entry: &DirEntry, base: &Path, ignore_globset: Option<&GlobSet>) -> bool {
+    let relative_path = entry.path().strip_prefix(base).unwrap();
+
+    if let Some(gs) = ignore_globset {
+        if gs.is_match(relative_path) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn copy_directory(
     src: &Path,
     dest: &Path,
     hard_link: bool,
     ignore_globset: Option<&GlobSet>,
 ) -> Result<()> {
-    // We can avoid a lot of unnecessary work if the src directory is filtered out of the globset
-    let relative_path = src.strip_prefix(src).unwrap();
-    if let Some(gs) = ignore_globset {
-        if gs.is_match(relative_path) {
-            return Ok(());
-        }
-    }
-
-    for entry in
-        WalkDir::new(src).follow_links(true).into_iter().filter_map(std::result::Result::ok)
+    for entry in WalkDir::new(src)
+        .follow_links(true)
+        .into_iter()
+        .filter_entry(|e| !is_ignored(e, src, ignore_globset))
+        .filter_map(std::result::Result::ok)
     {
         let relative_path = entry.path().strip_prefix(src).unwrap();
-
-        if let Some(gs) = ignore_globset {
-            if gs.is_match(relative_path) {
-                continue;
-            }
-        }
 
         let target_path = dest.join(relative_path);
 
